@@ -33,7 +33,23 @@ button {
 }
 
 button:hover:not(:disabled) { background: var(--yellow); }
-button:disabled { opacity: 0.38; cursor: not-allowed; }
+button:disabled { opacity: 0.38; cursor: not-allowed; pointer-events: auto; }
+
+#tooltip {
+  position: fixed;
+  background: #fff;
+  color: var(--ink);
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 6px 10px;
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  z-index: 1000;
+  pointer-events: none;
+  display: none;
+  white-space: nowrap;
+}
 
 input {
   font-family: 'Courier New', Courier, monospace;
@@ -157,6 +173,52 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
+}
+
+#rival-display {
+  border: var(--border);
+  padding: 4px 14px;
+  text-align: center;
+  background: var(--cream);
+  box-shadow: 3px 3px 0 var(--ink);
+  min-width: 110px;
+}
+
+#rival-display.rival-ahead {
+  border-color: var(--red);
+  background: #fdf0ef;
+  box-shadow: 3px 3px 0 var(--red);
+}
+
+.rival-vs {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--red);
+  font-weight: bold;
+}
+
+#rival-name-display {
+  font-size: 9px;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+
+#rival-followers-display {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.rival-label {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: #555;
 }
 
 #week-display {
@@ -456,6 +518,20 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
   align-items: flex-start;
 }
 
+#chemistry-display {
+  border-top: 2px solid var(--ink);
+  padding: 7px 16px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+  background: var(--cream);
+  background-image: none;
+}
+
+#chemistry-display span {
+  font-weight: bold;
+}
+
 /* ─── MEMBER CARDS ─────────────────────────────────────────────────────────── */
 
 .member-card {
@@ -718,6 +794,38 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
 
 .modal-btn:hover { background: var(--yellow); color: var(--ink); }
 
+/* ─── WEEK REPORT MODAL ────────────────────────────────────────────────────── */
+
+.report-card {
+  max-width: 480px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.report-section {
+  margin-bottom: 12px;
+}
+
+.report-section-label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: #888;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 3px;
+  margin-bottom: 6px;
+}
+
+.report-entry {
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 2px 0 2px 10px;
+  border-left: 2px solid var(--ink);
+  margin-bottom: 3px;
+}
+
+.report-entry.good { border-left-color: #2e7d32; }
+.report-entry.bad  { border-left-color: var(--red); }
+
 /* ─── HIRE MODAL ───────────────────────────────────────────────────────────── */
 
 .candidate-card {
@@ -793,6 +901,20 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
 .end-stat strong {
   font-size: 18px;
   font-family: Georgia, serif;
+}
+
+.loss-card .end-headline {
+  color: var(--red);
+}
+
+.loss-card .end-sub {
+  border-bottom-color: var(--red);
+}
+
+#loss-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* ─── SCROLLBARS ───────────────────────────────────────────────────────────── */

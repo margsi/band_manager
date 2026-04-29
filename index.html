@@ -36,6 +36,12 @@
           <div class="week-label">WEEK</div>
           <div id="week-number">1</div>
         </div>
+        <div id="rival-display">
+          <div class="rival-vs">VS</div>
+          <div id="rival-name-display">—</div>
+          <div id="rival-followers-display">0</div>
+          <div class="rival-label">RIVALS</div>
+        </div>
       </div>
 
       <div id="top-right">
@@ -84,11 +90,11 @@
             <span class="rehearsal-label">THIS WEEK:</span>
             <button class="rehearsal-btn" data-action="learn"       onclick="setRehearsal('learn')">LEARN SONGS</button>
             <button class="rehearsal-btn" data-action="write"       onclick="setRehearsal('write')">WRITE SONG</button>
-            <button class="rehearsal-btn" data-action="performance" onclick="setRehearsal('performance')">LIVE PERF.</button>
-            <button class="rehearsal-btn selected" data-action="none" onclick="setRehearsal(null)">SKIP</button>
+            <button class="rehearsal-btn selected" data-action="performance" onclick="setRehearsal('performance')">WORK ON LIVE PERF.</button>
           </div>
         </div>
         <div id="members-area"></div>
+        <div id="chemistry-display"></div>
       </div>
 
       <!-- Right: Band Slot -->
@@ -98,6 +104,15 @@
         <div id="social-list"></div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- Week Report Modal -->
+  <div id="report-modal" class="modal-overlay hidden">
+    <div class="modal-card report-card">
+      <div id="report-title" class="modal-title">WEEK REPORT</div>
+      <div id="report-body"></div>
+      <button class="modal-btn" onclick="dismissReport()">CONTINUE</button>
     </div>
   </div>
 
@@ -126,9 +141,21 @@
       <div class="end-headline">SIGNED.</div>
       <div class="end-sub">A major label wants you. You made it.</div>
       <div id="end-stats"></div>
+      <button class="modal-btn" onclick="resetGame(true)" style="margin-top:8px;align-self:flex-start">START OVER</button>
     </div>
   </div>
 
+  <!-- Loss Screen -->
+  <div id="loss-screen" class="modal-overlay hidden">
+    <div class="modal-card end-card loss-card">
+      <div class="end-headline">BEATEN.</div>
+      <div class="end-sub"><span id="loss-rival-name">They</span> got signed. You didn't make it in time.</div>
+      <div id="loss-stats"></div>
+      <button class="modal-btn" onclick="resetGame(true)" style="margin-top:8px;align-self:flex-start">TRY AGAIN</button>
+    </div>
+  </div>
+
+  <div id="tooltip"></div>
   <script src="game.js"></script>
 </body>
 </html>

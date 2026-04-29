@@ -274,18 +274,19 @@ New member's contribution needs to raise song scores by ≥3 points within ~10 s
 
 ### Event table
 
-| Event | Type | Effect | Trigger condition |
-|---|---|---|---|
-| Local press feature | Good | +5,000 followers | followers 1,000–50,000 |
-| Gear sponsor | Good | Free instrument upgrade, unlocks T3 technical | any song score ≥ 70 |
-| Creative breakthrough | Good | +20 songwriting for one member | any member songwriting ≥ 65 |
-| Viral moment | Good | +100,000 followers, +$400. Fires once per game only. | stage ≥ 60 + concert played that week |
-| Mentorship offer | Good | Unlocks T3 songwriting for all members | 3+ songs recorded, avg score ≥ 75 |
-| Band argument | Bad | Chemistry −15. No choice. | 8% chance per week (requires 2+ members) |
-| Member quits | Bad | Lose them permanently. Chemistry −20 for remaining members. | chemistry < 25 for 3+ consecutive weeks |
-| Bad review | Bad | Followers −5,000 | song score < 35 on release |
-| Injury | Bad | One member misses 3 weeks of training | 2% chance per week per member |
-| **Label deal** | **Ending** | **Game over — you made it.** | **followers ≥ 1,000,000** |
+| Event | Type | Effect | Trigger condition                                                    |
+|---|---|---|----------------------------------------------------------------------|
+| Local press feature | Good | +5,000 followers | followers 1,000–50,000                                               |
+| Gear sponsor | Good | Free instrument upgrade, unlocks T3 technical | any song score ≥ 70                                                  |
+| Creative breakthrough | Good | +20 songwriting for one member | any member songwriting ≥ 65                                          |
+| Viral moment | Good | +100,000 followers, +$400. Fires once per game only. | stage ≥ 60 + concert played that week                                |
+| Mentorship offer | Good | Unlocks T3 songwriting for all members | 3+ songs recorded, avg score ≥ 75                                    |
+| Band argument | Bad | Chemistry −15. No choice. | 8% chance per week (requires 2+ members)                             |
+| Member quits | Bad | Lose them permanently. Chemistry −20 for remaining members. | 10% chance per week once chemistry < 25 for 3+ consecutive weeks |
+| Song goes viral | Good | That song +3–5 quality, +75–150 followers | 1% chance per concert if an original song is on the setlist          |
+| Bad review | Bad | Followers −5,000 | 35% chance per concert if any song with score < 35 is on the setlist |
+| Injury | Bad | One member misses 1–4 weeks of training (random) | 0.5% chance per week per member |
+| **Label deal** | **Ending** | **Game over — you made it.** | **followers ≥ 1,000,000**                                            |
 
 ### Event implementation notes
 - Check events at the end of each week tick, after all other state updates

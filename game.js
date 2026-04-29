@@ -23,6 +23,12 @@ const SOCIAL = [
 
 const TIER_CAPS = [0, 40, 70, 100]; // index = tier number
 
+const RIVAL_NAMES = [
+  'The Static Kings', 'Dead Frequencies', 'Hollow Parade',
+  'Neon Ghosts', 'Paper Tigers', 'Electric Shadows',
+  'The Slow Burn', 'Bitter Signal', 'Chrome Parade', 'Glass Echoes',
+];
+
 const FIRST_NAMES = [
   'Alex','Jordan','Sam','Casey','Morgan','Riley','Taylor','Jamie','Drew','Avery',
   'Blake','Quinn','Sage','River','Charlie','Reese','Dakota','Hayden','Parker','Rowan',
@@ -49,6 +55,7 @@ const SONG_B = [
 
 let gs = null;
 let pendingEvents = [];
+let weekLog = [];   // entries: { section, text, tone }
 let draggedSongId = null;
 let _uid = 1;
 
@@ -75,6 +82,16 @@ function fmtFollowers(n) {
   if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M';
   if (n >= 1000)    return (n / 1000).toFixed(1) + 'K';
   return n.toString();
+}
+
+function chemLabel(v) {
+  if (v <= 0)  return 'None';
+  if (v <= 15) return 'Tense';
+  if (v <= 30) return 'Awkward';
+  if (v <= 45) return 'Ok';
+  if (v <= 60) return 'Solid';
+  if (v <= 79) return 'Tight';
+  return 'On fire';
 }
 
 function skillLabel(v) {
@@ -160,7 +177,7 @@ function newGame(bandName) {
     week: 1,
     money: 500,
     followers: 0,
-    chemistry: 0,
+    chemistry: 50,
     chemistryTier: 1,
     members: [solo],
     songs: [],
@@ -174,10 +191,11 @@ function newGame(bandName) {
     songsWritten:   0,
     bestSongScore:  0,
     lowChemWeeks:   0,
-    rehearsalAction: null,
-    memberActions:   {},
+    rehearsalAction: 'performance',
+    memberActions:   { [solo.id]: { type: 'practice' } },
     candidates:      [],
     ended:           false,
+    rival: { name: RIVAL_NAMES[rand(0, RIVAL_NAMES.length - 1)], followers: 500 },
   };
   refreshCandidates();
   save();
@@ -215,6 +233,7 @@ function tryLoad() {
     const data = JSON.parse(raw);
     gs   = data.gs;
     _uid = data._uid || 100;
+    if (!gs.rival) gs.rival = { name: RIVAL_NAMES[rand(0, RIVAL_NAMES.length - 1)], followers: Math.max(500, gs.week * 80) };
     return true;
   } catch (e) { return false; }
 }
@@ -224,10 +243,7 @@ function tryLoad() {
 function setRehearsal(action) {
   gs.rehearsalAction = action;
   document.querySelectorAll('.rehearsal-btn').forEach(btn => {
-    const a = btn.dataset.action;
-    btn.classList.toggle('selected',
-      (action === null && a === 'none') || a === action
-    );
+    btn.classList.toggle('selected', btn.dataset.action === action);
   });
 }
 
@@ -236,8 +252,12 @@ function setRehearsal(action) {
 function setMemberAction(memberId, actionType) {
   if (!gs.memberActions) gs.memberActions = {};
   gs.memberActions[memberId] = { type: actionType };
-  // Re-render just the members area to avoid full re-render flicker
   renderRehearsalRoom();
+}
+
+function preSelectMemberActions() {
+  gs.memberActions = {};
+  gs.members.forEach(m => { gs.memberActions[m.id] = { type: 'practice' }; });
 }
 
 // ─── WEEK RESOLUTION ─────────────────────────────────────────────────────────
@@ -245,19 +265,50 @@ function setMemberAction(memberId, actionType) {
 function confirmBandSlot(type, idx) {
   if (gs.ended) return;
 
+  weekLog = [];
   const data = type === 'concert' ? VENUES[idx] : SOCIAL[idx];
 
   processMemberActions();
   processRehearsal();
   processBandSlot(type, data);
+  tickRival();
   checkEvents();
 
   gs.week++;
-  gs.memberActions  = {};
-  gs.rehearsalAction = null;
   refreshCandidates();
   save();
 
+  showWeekReport();
+}
+
+function log(section, text, tone) {
+  weekLog.push({ section, text, tone: tone || 'neutral' });
+}
+
+function showWeekReport() {
+  const sections = ['MEMBERS', 'REHEARSAL', 'TONIGHT', 'COMPETITION'];
+  const bySection = {};
+  sections.forEach(s => { bySection[s] = []; });
+  weekLog.forEach(e => {
+    if (bySection[e.section]) bySection[e.section].push(e);
+  });
+
+  const html = sections
+    .filter(s => bySection[s].length)
+    .map(s => `
+      <div class="report-section">
+        <div class="report-section-label">${s}</div>
+        ${bySection[s].map(e => `<div class="report-entry ${e.tone}">${e.text}</div>`).join('')}
+      </div>`)
+    .join('');
+
+  document.getElementById('report-title').textContent = `WEEK ${gs.week - 1} REPORT`;
+  document.getElementById('report-body').innerHTML = html || '<div class="report-entry">A quiet week.</div>';
+  document.getElementById('report-modal').classList.remove('hidden');
+}
+
+function dismissReport() {
+  document.getElementById('report-modal').classList.add('hidden');
   if (pendingEvents.length) {
     showNextEvent();
   } else {
@@ -281,6 +332,7 @@ function processMemberActions() {
   gs.members.forEach(m => {
     if (m.injuredWeeks > 0) {
       m.injuredWeeks--;
+      log('MEMBERS', `${m.name} was injured — skipped training`, 'bad');
       return;
     }
     const action = gs.memberActions[m.id];
@@ -289,6 +341,7 @@ function processMemberActions() {
     switch (action.type) {
       case 'practice':
         gainSkill(m, 'technical', rand(2, 4));
+        log('MEMBERS', `${m.name} practiced — Technical improved`);
         trainerCount++;
         break;
       case 'lesson':
@@ -296,11 +349,13 @@ function processMemberActions() {
           gs.money -= 150;
           m.technicalTier = Math.max(m.technicalTier, 2);
           gainSkill(m, 'technical', rand(5, 8));
+          log('MEMBERS', `${m.name} took a paid lesson (−$150) — Technical improved`);
           trainerCount++;
         }
         break;
       case 'write':
         gainSkill(m, 'songwriting', rand(2, 4));
+        log('MEMBERS', `${m.name} wrote music — Songwriting improved`);
         trainerCount++;
         break;
       case 'cowrite':
@@ -308,20 +363,26 @@ function processMemberActions() {
           gainSkill(m, 'songwriting', rand(3, 5));
           m.coWriteCount++;
           if (m.coWriteCount >= 3) m.songwritingTier = Math.max(m.songwritingTier, 2);
+          log('MEMBERS', `${m.name} co-wrote with a bandmate — Songwriting improved`);
         } else {
-          gainSkill(m, 'songwriting', rand(2, 4)); // unpaired fallback
+          gainSkill(m, 'songwriting', rand(2, 4));
+          log('MEMBERS', `${m.name} wrote music — Songwriting improved`);
         }
         trainerCount++;
         break;
-      case 'busk':
+      case 'busk': {
         gainSkill(m, 'stage', rand(2, 4));
-        gs.money += rand(20, 40);
+        const busked = rand(20, 40);
+        gs.money += busked;
+        log('MEMBERS', `${m.name} busked — Stage improved, earned ${fmtMoney(busked)}`);
         trainerCount++;
         break;
+      }
       case 'workshop':
         if (gs.money >= 80) {
           gs.money -= 80;
           gainSkill(m, 'stage', rand(5, 8));
+          log('MEMBERS', `${m.name} attended a stage workshop (−$80) — Stage improved`);
           trainerCount++;
         }
         break;
@@ -353,6 +414,7 @@ function processRehearsal() {
       for (let i = 0; i < count; i++) {
         gs.songs.push({ id: uid(), title: randSongTitle(), type: 'cover', quality: rand(40, 60) });
       }
+      log('REHEARSAL', `Learned ${count} new cover song${count > 1 ? 's' : ''}`, 'good');
       break;
     }
     case 'write': {
@@ -362,23 +424,8 @@ function processRehearsal() {
       gs.songsWritten++;
       if (score > gs.bestSongScore) gs.bestSongScore = score;
 
-      if (score < 35) {
-        queueEvent({
-          badge: 'BAD NEWS',
-          title: 'BAD REVIEW',
-          text: `"${song.title}" gets torn apart by the press. That one hurt. −5,000 followers.`,
-          isBad: true,
-          effect() { gs.followers = Math.max(0, gs.followers - 5000); },
-        });
-      } else {
-        queueEvent({
-          badge: 'NEW SONG',
-          title: `"${song.title.toUpperCase()}"`,
-          text: `You wrote a new original song. Quality: ${skillLabel(score)} (${score}/100). Added to your library.`,
-          isBad: false,
-          effect() {},
-        });
-      }
+      const tone = score < 35 ? 'bad' : 'good';
+      log('REHEARSAL', `Wrote "${song.title}" — Quality: ${skillLabel(score)}`, tone);
       break;
     }
     case 'performance': {
@@ -387,6 +434,9 @@ function processRehearsal() {
       gs.members.forEach(m => gainSkill(m, 'stage', stageGain));
       if (gs.members.length > 1) {
         gs.chemistry = clamp(gs.chemistry + chemGain, 0, TIER_CAPS[gs.chemistryTier]);
+        log('REHEARSAL', `Worked on live performance — Stage improved for all, Chemistry +${chemGain}`, 'good');
+      } else {
+        log('REHEARSAL', `Worked on live performance — Stage improved`, 'good');
       }
       break;
     }
@@ -399,21 +449,55 @@ function processBandSlot(type, data) {
     gs.money     += result.income;
     gs.followers += result.followers;
     gs.concertsPlayed++;
+    log('TONIGHT', `Played ${data.name} — earned ${fmtMoney(result.income)}, +${fmtFollowers(result.followers)} followers`, 'good');
 
-    queueEvent({
-      badge: 'SHOW REPORT',
-      title: data.name.toUpperCase(),
-      text: `The crowd was into it. Earned ${fmtMoney(result.income)} and picked up ${fmtFollowers(result.followers)} new followers.`,
-      isBad: false,
-      effect() {},
-    });
+    const originals = gs.setlist.map(id => gs.songs.find(s => s.id === id)).filter(s => s && s.type === 'original');
+    if (originals.length && Math.random() < 0.01) {
+      const song = originals[rand(0, originals.length - 1)];
+      const qGain = rand(3, 5);
+      const fGain = rand(75, 150);
+      song.quality = clamp(song.quality + qGain, 1, 100);
+      queueEvent({
+        badge: 'GOING VIRAL',
+        title: `"${song.title.toUpperCase()}" GOES VIRAL`,
+        text: `A video of "${song.title}" took off online. The song sounds even better now. +${qGain} quality, +${fGain} followers.`,
+        isBad: false,
+        effect() { gs.followers += fGain; },
+      });
+    }
+
+    const badSongs = gs.setlist.map(id => gs.songs.find(s => s.id === id)).filter(s => s && s.quality < 35);
+    if (badSongs.length && Math.random() < 0.35) {
+      const bad = badSongs[rand(0, badSongs.length - 1)];
+      queueEvent({
+        badge: 'BAD NEWS',
+        title: 'BAD REVIEW',
+        text: `"${bad.title}" gets torn apart by the press. Playing a weak song live drew attention to it. −5,000 followers.`,
+        isBad: true,
+        effect() { gs.followers = Math.max(0, gs.followers - 5000); },
+      });
+    }
   } else if (type === 'social') {
     if (gs.money >= data.cost) {
       gs.money -= data.cost;
       if (gs.members.length > 1) {
         gs.chemistry = clamp(gs.chemistry + data.chem, 0, TIER_CAPS[gs.chemistryTier]);
+        log('TONIGHT', `${data.name} — Chemistry +${data.chem}${data.cost > 0 ? `, spent ${fmtMoney(data.cost)}` : ''}`, 'good');
+      } else {
+        log('TONIGHT', `${data.name}${data.cost > 0 ? ` — spent ${fmtMoney(data.cost)}` : ''}`, 'neutral');
       }
     }
+  }
+}
+
+// ─── RIVAL ────────────────────────────────────────────────────────────────────
+
+function tickRival() {
+  const base = Math.floor(gs.rival.followers * 0.045 + rand(30, 100));
+  const breakout = Math.random() < 0.05;
+  gs.rival.followers += breakout ? Math.floor(base * 1.6) : base;
+  if (breakout) {
+    log('COMPETITION', `${gs.rival.name} had a breakout week.`, 'bad');
   }
 }
 
@@ -433,12 +517,12 @@ function checkEvents() {
 
   // Injury: 2% per member per week
   gs.members.forEach(m => {
-    if (m.injuredWeeks === 0 && Math.random() < 0.02) {
-      m.injuredWeeks = 3;
+    if (m.injuredWeeks === 0 && Math.random() < 0.005) {
+      m.injuredWeeks = rand(1, 4);
       queueEvent({
         badge: 'SETBACK',
         title: 'INJURY',
-        text: `${m.name} picked up an injury and can't train for 3 weeks.`,
+        text: `${m.name} picked up an injury and can't train for ${m.injuredWeeks} week${m.injuredWeeks > 1 ? 's' : ''}.`,
         isBad: true,
         effect() {},
       });
@@ -518,7 +602,7 @@ function checkEvents() {
   if (gs.members.length >= 2) {
     if (gs.chemistry < 25) {
       gs.lowChemWeeks++;
-      if (gs.lowChemWeeks >= 3) {
+      if (gs.lowChemWeeks >= 3 && Math.random() < 0.10) {
         gs.lowChemWeeks = 0;
         const quitter = gs.members[gs.members.length - 1];
         queueEvent({
@@ -548,6 +632,18 @@ function checkEvents() {
       effect() { showEndScreen(); },
     });
   }
+
+  // Loss condition: rival hits 1M first
+  if (gs.rival.followers >= 1000000 && !gs.ended) {
+    gs.ended = true;
+    queueEvent({
+      badge: 'GAME OVER',
+      title: 'TOO LATE',
+      text: `${gs.rival.name} just got signed. The label that had its eye on you signed them instead. The window has closed.`,
+      isBad: true,
+      effect() { showLossScreen(); },
+    });
+  }
 }
 
 function queueEvent(ev) { pendingEvents.push(ev); }
@@ -556,7 +652,7 @@ function showNextEvent() {
   const ev = pendingEvents[0];
   if (!ev) { render(); return; }
 
-  if (ev.effect) { ev.effect(); ev.effect = null; } // apply once
+  if (ev.effect) { ev.effect(); ev.effect = null; save(); } // apply once, persist immediately
 
   const modal = document.getElementById('event-modal');
   document.getElementById('event-modal-type').textContent    = ev.badge || 'EVENT';
@@ -632,6 +728,7 @@ function hireCandidate(candidateId) {
   const m = makeMember(c.role, c.technical, c.songwriting, c.stage);
   m.name = c.name;
   gs.members.push(m);
+  gs.memberActions[m.id] = { type: 'practice' };
   gs.candidates = gs.candidates.filter(x => x.id !== candidateId);
 
   closeHireModal();
@@ -646,11 +743,15 @@ function addToSetlist(songId) {
   if (gs.setlist.length >= 20) return;
   gs.setlist.push(songId);
   renderSetlist();
+  renderBandSlot();
+  save();
 }
 
 function removeFromSetlist(songId) {
   gs.setlist = gs.setlist.filter(id => id !== songId);
   renderSetlist();
+  renderBandSlot();
+  save();
 }
 
 function toggleAvailableSongs() {
@@ -695,16 +796,19 @@ function render() {
   renderRehearsalRoom();
   renderSetlist();
   renderBandSlot();
+  renderRival();
 }
 
 function renderRehearsalRoom() {
   document.getElementById('members-area').innerHTML = gs.members.map(renderMember).join('');
 
+  const chem = gs.members.length > 1 ? gs.chemistry : null;
+  document.getElementById('chemistry-display').innerHTML = chem !== null
+    ? `BAND CHEMISTRY — <span>${chemLabel(chem)}</span>`
+    : '';
+
   document.querySelectorAll('.rehearsal-btn').forEach(btn => {
-    const a = btn.dataset.action;
-    btn.classList.toggle('selected',
-      (gs.rehearsalAction === null && a === 'none') || a === gs.rehearsalAction
-    );
+    btn.classList.toggle('selected', btn.dataset.action === gs.rehearsalAction);
   });
 }
 
@@ -717,20 +821,21 @@ function renderMember(m) {
   const canWorkshop = gs.money >= 80;
 
   const actions = [
-    { type:'practice', label:'Practice',      sub:'Technical',   disabled: false },
-    { type:'lesson',   label:'Lesson',        sub:`Technical · $150`, disabled: !canLesson },
-    { type:'write',    label:'Write',         sub:'Songwriting', disabled: false },
-    { type:'cowrite',  label:'Co-write',      sub:'Songwriting · 2x', disabled: !canCowrite },
-    { type:'busk',     label:'Busk',          sub:'Stage + $',   disabled: false },
-    { type:'workshop', label:'Workshop',      sub:`Stage · $80`, disabled: !canWorkshop },
+    { type:'practice', label:'Practice',  sub:'Technical',        tip: null },
+    { type:'lesson',   label:'Lesson',    sub:'Technical · $150', tip: !canLesson ? 'Not enough money ($150)' : null },
+    { type:'write',    label:'Write',     sub:'Songwriting',      tip: null },
+    { type:'cowrite',  label:'Co-write',  sub:'Songwriting · 2x', tip: !canCowrite ? 'Requires 2+ members' : null },
+    { type:'busk',     label:'Busk',      sub:'Stage + $',        tip: null },
+    { type:'workshop', label:'Workshop',  sub:'Stage · $80',      tip: !canWorkshop ? 'Not enough money ($80)' : null },
   ];
 
   const btns = actions.map(a => {
     const isSelected = sel === a.type;
-    const dis = a.disabled || injured;
+    const dis = (a.tip !== null) || injured;
+    const tipAttr = dis ? `data-tip="${injured && !a.tip ? 'Member is injured' : a.tip || 'Member is injured'}"` : '';
     return `<button class="action-btn ${isSelected ? 'selected' : ''}"
               onclick="setMemberAction(${m.id}, '${a.type}')"
-              ${dis ? 'disabled' : ''}>
+              ${dis ? 'disabled' : ''} ${tipAttr}>
               ${a.label}<span class="action-cost"> · ${a.sub}</span>
             </button>`;
   }).join('');
@@ -790,17 +895,28 @@ function renderBandSlot() {
   const venueEl  = document.getElementById('venues-list');
   const socialEl = document.getElementById('social-list');
 
+  const availableMembers = gs.members.filter(m => m.injuredWeeks === 0).length;
+
   venueEl.innerHTML = VENUES.map((v, i) => {
-    const unlocked   = gs.followers >= v.req;
+    const unlocked    = gs.followers >= v.req;
     const enoughSongs = gs.setlist.length >= v.minSet;
-    const dis        = !unlocked || !enoughSongs;
-    const result     = calcConcertResult(v);
-    const hint       = !unlocked
+    const hasPlayers  = availableMembers >= 1;
+    const dis         = !unlocked || !enoughSongs || !hasPlayers;
+    const result      = calcConcertResult(v);
+    const hint        = !unlocked
       ? fmtFollowers(v.req) + ' followers required'
       : !enoughSongs
         ? `${v.minSet} songs on setlist required`
         : `${fmtMoney(result.income)} · +${fmtFollowers(result.followers)}`;
-    return `<button class="venue-btn" onclick="confirmBandSlot('concert', ${i})" ${dis ? 'disabled' : ''}>
+    const tip = !hasPlayers
+      ? 'No available members — everyone is injured'
+      : !unlocked
+        ? `Need ${fmtFollowers(v.req)} followers to unlock`
+        : !enoughSongs
+          ? `Need ${v.minSet} songs on your setlist`
+          : null;
+    return `<button class="venue-btn" onclick="confirmBandSlot('concert', ${i})"
+              ${dis ? 'disabled' : ''} ${tip ? `data-tip="${tip}"` : ''}>
               <span class="venue-name">${v.name}</span>
               <span class="venue-req">${hint}</span>
             </button>`;
@@ -808,10 +924,16 @@ function renderBandSlot() {
 
   const hasBand = gs.members.length >= 2;
   const socialBtns = SOCIAL.map((a, i) => {
-    const canAfford  = gs.money >= a.cost;
-    const needsBand  = a.name !== 'Movie Night';
-    const dis        = (needsBand && !hasBand) || !canAfford;
-    return `<button class="social-btn" onclick="confirmBandSlot('social', ${i})" ${dis ? 'disabled' : ''}>
+    const canAfford = gs.money >= a.cost;
+    const needsBand = a.name !== 'Movie Night';
+    const dis       = (needsBand && !hasBand) || !canAfford;
+    const tip       = !canAfford
+      ? `Not enough money (${fmtMoney(a.cost)} required)`
+      : (needsBand && !hasBand)
+        ? 'Requires 2+ band members'
+        : null;
+    return `<button class="social-btn" onclick="confirmBandSlot('social', ${i})"
+              ${dis ? 'disabled' : ''} ${tip ? `data-tip="${tip}"` : ''}>
               <span class="social-name">${a.name}</span>
               <span class="social-detail">+${a.chem} chemistry${a.cost > 0 ? ' · ' + fmtMoney(a.cost) : ' · Free'}</span>
             </button>`;
@@ -850,14 +972,37 @@ function showEndScreen() {
   localStorage.removeItem('bandmgr_v1');
 }
 
+function showLossScreen() {
+  document.getElementById('loss-rival-name').textContent = gs.rival.name;
+  document.getElementById('loss-stats').innerHTML = [
+    ['WEEKS PLAYED',    gs.week],
+    ['YOUR FOLLOWERS',  fmtFollowers(gs.followers)],
+    ['THEIR FOLLOWERS', fmtFollowers(gs.rival.followers)],
+    ['SONGS WRITTEN',   gs.songsWritten],
+  ].map(([label, val]) =>
+    `<div class="end-stat"><span>${label}</span><strong>${val}</strong></div>`
+  ).join('');
+
+  document.getElementById('loss-screen').classList.remove('hidden');
+  localStorage.removeItem('bandmgr_v1');
+}
+
+function renderRival() {
+  if (!gs.rival) return;
+  document.getElementById('rival-name-display').textContent      = gs.rival.name;
+  document.getElementById('rival-followers-display').textContent = fmtFollowers(gs.rival.followers);
+  const ahead = gs.rival.followers > gs.followers;
+  document.getElementById('rival-display').classList.toggle('rival-ahead', ahead);
+}
+
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
 
 function toggleSettings() {
   document.getElementById('settings-menu').classList.toggle('hidden');
 }
 
-function resetGame() {
-  if (!confirm('Reset everything and start over?')) return;
+function resetGame(skipConfirm) {
+  if (!skipConfirm && !confirm('Reset everything and start over?')) return;
   localStorage.removeItem('bandmgr_v1');
   location.reload();
 }
@@ -873,6 +1018,29 @@ window.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('band-name-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') startGame();
+  });
+
+  const tooltip = document.getElementById('tooltip');
+
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest('[data-tip]');
+    if (el?.dataset.tip) {
+      tooltip.textContent = el.dataset.tip;
+      tooltip.style.display = 'block';
+    }
+  });
+
+  document.addEventListener('mouseout', e => {
+    if (!e.relatedTarget?.closest?.('[data-tip]')) {
+      tooltip.style.display = 'none';
+    }
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (tooltip.style.display === 'block') {
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top  = (e.clientY - 36) + 'px';
+    }
   });
 
   document.addEventListener('click', e => {
