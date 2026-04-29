@@ -8,7 +8,7 @@ This file is also the canonical design document for the game. All formulas, econ
 
 ## Project overview
 
-A browser-based band management sim where the player grows a solo musician into a signed band. The game ends when followers reach 1,000,000 and a record label deal fires.
+**GET FAMOUS** — a browser-based band management sim where the player grows a solo musician into a signed band. The game ends when followers reach 1,000,000 and a record label deal fires. A rival band grows in parallel — if they hit 1M first, the player loses.
 
 **Stack:** plain HTML / JS / CSS, no build step, no frameworks. Opens directly in a browser.  
 **Save:** `localStorage`.
@@ -36,14 +36,16 @@ All game state lives in a single JS object and is serialised to `localStorage` o
 
 The player enters a band name before the game starts. This is the only setup screen.
 
-Key top-level fields: `week`, `money`, `followers`, `bandName`, `members[]`, `songs[]`, `chemistry`, `viralFired`, `lowChemWeeks` (per-member counter for the "member quits" trigger).
+Key top-level fields: `week`, `money`, `followers`, `bandName`, `members[]`, `songs[]`, `chemistry`, `rival` (name + followers), one-time event flags (see event table), `lowChemWeeks`, `lastAnniversaryWeek`.
 
 ### Week tick order
 
 1. Resolve player actions (train / concert / social activity / hire)
-2. Check and fire random events (see event table)
-3. Check win condition (followers ≥ 1,000,000 → label deal ending)
-4. Persist state to `localStorage`
+2. Tick rival band growth
+3. Check and fire random events (see event table)
+4. Check win condition (followers ≥ 1,000,000 → label deal ending)
+5. Check loss condition (rival followers ≥ 1,000,000 → beaten ending)
+6. Persist state to `localStorage`
 
 ---
 
@@ -274,31 +276,45 @@ New member's contribution needs to raise song scores by ≥3 points within ~10 s
 
 ### Event table
 
-| Event | Type | Effect | Trigger condition                                                    |
-|---|---|---|----------------------------------------------------------------------|
-| Local press feature | Good | +5,000 followers | followers 1,000–50,000                                               |
-| Gear sponsor | Good | Free instrument upgrade, unlocks T3 technical | any song score ≥ 70                                                  |
-| Creative breakthrough | Good | +20 songwriting for one member | any member songwriting ≥ 65                                          |
-| Viral moment | Good | +100,000 followers, +$400. Fires once per game only. | stage ≥ 60 + concert played that week                                |
-| Mentorship offer | Good | Unlocks T3 songwriting for all members | 3+ songs recorded, avg score ≥ 75                                    |
-| Band argument | Bad | Chemistry −15. No choice. | 8% chance per week (requires 2+ members)                             |
-| Member quits | Bad | Lose them permanently. Chemistry −20 for remaining members. | 10% chance per week once chemistry < 25 for 3+ consecutive weeks |
-| Song goes viral | Good | That song +3–5 quality, +75–150 followers | 1% chance per concert if an original song is on the setlist          |
-| Bad review | Bad | Followers −5,000 | 35% chance per concert if any song with score < 35 is on the setlist |
-| Injury | Bad | One member misses 1–4 weeks of training (random) | 0.5% chance per week per member |
-| **Label deal** | **Ending** | **Game over — you made it.** | **followers ≥ 1,000,000**                                            |
+| Event | Type | Once? | Effect | Trigger condition |
+|---|---|---|---|---|
+| Local press feature | Good | ✓ | +5,000 followers | followers 1,000–50,000 |
+| Gear sponsor | Good | ✓ | Unlocks T3 technical for all | any song score ≥ 70 |
+| Creative breakthrough | Good | ✓ | +20 songwriting for one member | any member songwriting ≥ 65 |
+| Viral moment | Good | ✓ | +100,000 followers, +$400 | stage ≥ 60 + concert played that week |
+| Mentorship offer | Good | ✓ | Unlocks T3 songwriting for all | 3+ songs recorded, avg score ≥ 75 |
+| Opening act offer | Good | ✓ | +8,000 followers, +$300 | followers 5,000–200,000 |
+| Radio play | Good | ✓ | +12,000 followers | original song quality ≥ 65 + 5+ concerts played |
+| Sync license | Good | ✓ | +$800 | best song score ≥ 80 |
+| Merch windfall | Good | ✓ | +$500 | followers ≥ 25,000 |
+| Label scout | Good | ✓ | Chemistry +10 | followers ≥ 150,000 |
+| Band anniversary | Good | per milestone | Chemistry +8 | every 10 weeks |
+| Song goes viral | Good | — | That song +3–5 quality, +75–150 followers | 1% chance per concert if original on setlist |
+| Superfan | Good | — | +1,000–3,000 followers | 1.5% chance per week, followers > 500 |
+| Band argument | Bad | — | Chemistry −15 | 8% chance per week (2+ members) |
+| Member quits | Bad | — | Lose member, Chemistry −20 | 10% chance per week if chemistry < 25 for 3+ consecutive weeks |
+| Bad review | Bad | — | Followers −5,000 | 35% chance per concert if any song with score < 35 is on setlist |
+| Injury | Bad | — | One member misses 1–4 weeks | 0.5% chance per week per member |
+| Gear stolen | Bad | — | −$200 | 2% chance per week |
+| Internet drama | Bad | — | −5,000 followers | 4% chance per week (2+ members, followers > 5,000) |
+| Food poisoning | Bad | — | All members injured 1 week | 1% chance per week (3+ members) |
+| **Label deal** | **Win** | ✓ | **Game over — you made it** | **followers ≥ 1,000,000** |
+| **Rival signed** | **Loss** | ✓ | **Game over — beaten** | **rival followers ≥ 1,000,000** |
 
 ### Event implementation notes
 - Check events at the end of each week tick, after all other state updates
-- Each event should only fire once unless noted (band argument and injury are repeatable)
-- Viral moment: use a `viralFired` flag in state, never fires twice
-- Member quits: track consecutive low-chemistry weeks per member in state
+- One-time events use boolean flags in state (e.g. `viralFired`, `openingActFired`, etc.)
+- `lastAnniversaryWeek` tracks the last week a milestone anniversary fired
+- Member quits: track consecutive low-chemistry weeks in `lowChemWeeks`
+- Rival: grows each week via `tickRival()` — ~4.5% compound growth + rand(30,100) base, 5% chance of breakout week (×1.6 gain). Reaches 1M in ~75 weeks.
 
 ---
 
-## Win condition
+## Win / loss conditions
 
-Followers ≥ 1,000,000 triggers the "Label deal" event as an interrupting popup. It's the ending — display a closing screen summarising the band's journey (weeks played, songs recorded, best song, total followers gained). No continue after this.
+**Win:** followers ≥ 1,000,000 → "Label deal" popup → **SIGNED.** end screen (weeks, songs, best song, followers, band size). No continue.
+
+**Loss:** rival followers ≥ 1,000,000 first → "Too Late" popup → **BEATEN.** loss screen (weeks, your followers vs rival's). TRY AGAIN button.
 
 ---
 
@@ -331,14 +347,20 @@ Followers ≥ 1,000,000 triggers the "Label deal" event as an interrupting popup
 - Body / stats: monospace or typewriter-style (e.g. `Courier New`)
 
 ### Layout
-- The **main viewscreen** (largest, central panel) displays the **rehearsal room** — all band members are visible inside the room. Below each member is a panel showing their chosen weekly action. The rehearsal room choice for the week is also set here.
+- The **main viewscreen** (largest, central panel) displays the **rehearsal room** — background image `assets/rehearsal_room.png`, band member avatars from `assets/` by role. Below each member is a panel showing their chosen weekly action. The rehearsal room choice for the week is also set here.
 - Secondary panels surround it for stats, setlist, economy, and the band slot (concert/record)
 - **Left:** the setlist panel. Shows the current setlist (up to 20 songs). Below it, an expandable section lists all available songs not currently in the setlist. Songs are added/removed via drag-and-drop between the two lists.
 - **Bottom-right:** the band slot panel. Choose a venue to play a concert, or choose a social activity instead. Confirming either option advances the week — this is the implicit "end week" action, never labelled as such
-- **Top-left:** band name, with a "Hire member" button below it
-- **Top-center:** week counter
+- **Top-left:** band name, hire member button, and media player (play/pause for `Get Famous.mp3`)
+- **Top-center:** week counter + rival band follower display (turns red when rival is ahead)
 - **Member skill stats:** not displayed directly. Hovering over a member shows a tooltip with approximate descriptions per skill — never raw numbers.
 - **Top-right corner:** a comic-drawn smartphone displaying a fictional social media app — the follower counter is the primary element, with the money counter shown below it
+
+### Setup screen
+- Shows `assets/get_famous_logo.png` (use `mix-blend-mode: multiply` + `filter: brightness(1.4) contrast(4)` to remove baked-in checkered background)
+- Video frame below logo cycles `assets/rock_show1.mp4` → `assets/rock_show2.mp4` in a loop, muted
+- `Get Famous.mp3` autoplays (triggered via video `play` event as browser autoplay bypass)
+- Band name input + START THE GRIND button
 
 ### Texture & detail
 - Halftone dot pattern on panel backgrounds: pure CSS `radial-gradient`, no images

@@ -196,6 +196,12 @@ function newGame(bandName) {
     gearSponsorFired:       false,
     creativeBreakthroughFired: false,
     mentorshipFired:        false,
+    openingActFired:        false,
+    radioPlayFired:         false,
+    licensedFired:          false,
+    merchDealFired:         false,
+    scoutFired:             false,
+    lastAnniversaryWeek:    0,
     concertsPlayed: 0,
     songsWritten:   0,
     bestSongScore:  0,
@@ -243,6 +249,7 @@ function tryLoad() {
     gs   = data.gs;
     _uid = data._uid || 100;
     if (!gs.rival) gs.rival = { name: RIVAL_NAMES[rand(0, RIVAL_NAMES.length - 1)], followers: Math.max(500, gs.week * 80) };
+    if (gs.lastAnniversaryWeek === undefined) gs.lastAnniversaryWeek = gs.week - (gs.week % 10);
     return true;
   } catch (e) { return false; }
 }
@@ -628,6 +635,129 @@ function checkEvents() {
     } else {
       gs.lowChemWeeks = 0;
     }
+  }
+
+  // Opening act: fires once, followers 5k–200k
+  if (!gs.openingActFired && gs.followers >= 5000 && gs.followers < 200000) {
+    gs.openingActFired = true;
+    queueEvent({
+      badge: 'OPPORTUNITY',
+      title: 'OPENING ACT OFFER',
+      text: 'A touring band picks you to open their show. Big room, new ears. +8,000 followers, +$300.',
+      isBad: false,
+      effect() { gs.followers += 8000; gs.money += 300; },
+    });
+  }
+
+  // Radio play: fires once, original with quality ≥ 65 and 5+ concerts played
+  if (!gs.radioPlayFired && gs.concertsPlayed >= 5) {
+    const radioSong = gs.songs.find(s => s.type === 'original' && s.quality >= 65);
+    if (radioSong) {
+      gs.radioPlayFired = true;
+      queueEvent({
+        badge: 'GOOD NEWS',
+        title: 'RADIO PLAY',
+        text: `"${radioSong.title}" got picked up by a local station. People are hearing you. +12,000 followers.`,
+        isBad: false,
+        effect() { gs.followers += 12000; },
+      });
+    }
+  }
+
+  // Sync license: fires once, best song score ≥ 80
+  if (!gs.licensedFired && gs.bestSongScore >= 80) {
+    const licensedSong = gs.songs.find(s => s.quality >= 80);
+    const licTitle = licensedSong ? `"${licensedSong.title}"` : 'One of your songs';
+    gs.licensedFired = true;
+    queueEvent({
+      badge: 'DEAL',
+      title: 'SYNC LICENSE',
+      text: `${licTitle} got licensed for a TV ad. You didn't even know it was that good. +$800.`,
+      isBad: false,
+      effect() { gs.money += 800; },
+    });
+  }
+
+  // Merch windfall: fires once, followers ≥ 25k
+  if (!gs.merchDealFired && gs.followers >= 25000) {
+    gs.merchDealFired = true;
+    queueEvent({
+      badge: 'CASH',
+      title: 'MERCH WINDFALL',
+      text: 'The online store sold out overnight. Someone with a big following posted your shirt. +$500.',
+      isBad: false,
+      effect() { gs.money += 500; },
+    });
+  }
+
+  // Label scout: fires once, followers ≥ 150k
+  if (!gs.scoutFired && gs.followers >= 150000) {
+    gs.scoutFired = true;
+    queueEvent({
+      badge: 'BUZZ',
+      title: 'LABEL SCOUT',
+      text: 'A major label scout showed up at your last show and took notes. The band is energised. Chemistry +10.',
+      isBad: false,
+      effect() { gs.chemistry = clamp(gs.chemistry + 10, 0, 100); },
+    });
+  }
+
+  // Band anniversary: every 10 weeks
+  if (gs.week % 10 === 0 && gs.week > gs.lastAnniversaryWeek) {
+    gs.lastAnniversaryWeek = gs.week;
+    queueEvent({
+      badge: 'MILESTONE',
+      title: `WEEK ${gs.week}`,
+      text: `${gs.week} weeks in. You're still here, still grinding. The band feels it. Chemistry +8.`,
+      isBad: false,
+      effect() { gs.chemistry = clamp(gs.chemistry + 8, 0, 100); },
+    });
+  }
+
+  // Gear stolen: 2% per week
+  if (Math.random() < 0.02) {
+    queueEvent({
+      badge: 'BAD NEWS',
+      title: 'GEAR STOLEN',
+      text: 'Someone broke into the rehearsal space. An amp is gone. −$200.',
+      isBad: true,
+      effect() { gs.money = Math.max(0, gs.money - 200); },
+    });
+  }
+
+  // Internet drama: 4% per week, 2+ members, followers > 5k
+  if (gs.members.length >= 2 && gs.followers > 5000 && Math.random() < 0.04) {
+    const culprit = gs.members[rand(0, gs.members.length - 1)];
+    queueEvent({
+      badge: 'DRAMA',
+      title: 'INTERNET DRAMA',
+      text: `${culprit.name} posted something and the internet did not take it well. −5,000 followers.`,
+      isBad: true,
+      effect() { gs.followers = Math.max(0, gs.followers - 5000); },
+    });
+  }
+
+  // Superfan: 1.5% per week, followers > 500
+  if (gs.followers > 500 && Math.random() < 0.015) {
+    const gain = rand(1000, 3000);
+    queueEvent({
+      badge: 'FAN LOVE',
+      title: 'SUPERFAN',
+      text: `Someone online is going absolutely feral over your music and dragging everyone they know to listen. +${fmtFollowers(gain)} followers.`,
+      isBad: false,
+      effect() { gs.followers += gain; },
+    });
+  }
+
+  // Food poisoning: 1% per week, 3+ members
+  if (gs.members.length >= 3 && Math.random() < 0.01) {
+    queueEvent({
+      badge: 'SETBACK',
+      title: 'FOOD POISONING',
+      text: 'The whole band ate at the same sketchy food truck. Everyone is out for a week.',
+      isBad: true,
+      effect() { gs.members.forEach(m => { if (m.injuredWeeks === 0) m.injuredWeeks = 1; }); },
+    });
   }
 
   // Win condition
