@@ -23,6 +23,15 @@ const SOCIAL = [
 
 const TIER_CAPS = [0, 40, 70, 100]; // index = tier number
 
+const ROLE_AVATARS = {
+  'Vocalist':  'assets/singer.png',
+  'Guitarist': 'assets/guitar_player.png',
+  'Bassist':   'assets/bass player.png',
+  'Drummer':   'assets/drummer.png',
+  'Keys':      'assets/keyboarder.png',
+};
+const ROLE_AVATAR_DARK = new Set(['Guitarist', 'Bassist']);
+
 const RIVAL_NAMES = [
   'The Static Kings', 'Dead Frequencies', 'Hollow Parade',
   'Neon Ghosts', 'Paper Tigers', 'Electric Shadows',
@@ -813,12 +822,12 @@ function renderRehearsalRoom() {
 }
 
 function renderMember(m) {
-  const icon    = ROLE_ICONS[m.role] || '🎵';
-  const injured = m.injuredWeeks > 0;
-  const sel     = gs.memberActions?.[m.id]?.type;
+  const injured   = m.injuredWeeks > 0;
+  const sel       = gs.memberActions?.[m.id]?.type;
   const canCowrite  = gs.members.length >= 2;
   const canLesson   = gs.money >= 150;
   const canWorkshop = gs.money >= 80;
+  const darkBg    = ROLE_AVATAR_DARK.has(m.role);
 
   const actions = [
     { type:'practice', label:'Practice',  sub:'Technical',        tip: null },
@@ -841,20 +850,20 @@ function renderMember(m) {
   }).join('');
 
   return `
-    <div class="member-card ${injured ? 'injured' : ''}">
-      <div class="member-header">
-        <span class="member-icon">${icon}</span>
-        <div>
-          <div class="member-name">${m.name}
-            <div class="stat-tooltip">
-              <div class="stat-row"><span>Technical</span><span>${skillLabel(m.technical)}</span></div>
-              <div class="stat-row"><span>Songwriting</span><span>${skillLabel(m.songwriting)}</span></div>
-              <div class="stat-row"><span>Stage</span><span>${skillLabel(m.stage)}</span></div>
-            </div>
+    <div class="member-card">
+      <div class="member-avatar-wrap ${darkBg ? 'dark-bg' : ''}">
+        <img class="member-avatar" src="${ROLE_AVATARS[m.role]}" alt="${m.role}">
+        ${injured ? `<div class="injured-overlay">INJURED<br>${m.injuredWeeks}w left</div>` : ''}
+      </div>
+      <div class="member-info">
+        <div class="member-name">${m.name}
+          <div class="stat-tooltip">
+            <div class="stat-row"><span>Technical</span><span>${skillLabel(m.technical)}</span></div>
+            <div class="stat-row"><span>Songwriting</span><span>${skillLabel(m.songwriting)}</span></div>
+            <div class="stat-row"><span>Stage</span><span>${skillLabel(m.stage)}</span></div>
           </div>
-          <div class="member-role">${m.role.toUpperCase()}</div>
-          ${injured ? `<div class="injured-badge">INJURED · ${m.injuredWeeks}w left</div>` : ''}
         </div>
+        <div class="member-role">${m.role.toUpperCase()}</div>
       </div>
       <div class="action-grid">${btns}</div>
     </div>`;

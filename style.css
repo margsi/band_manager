@@ -493,8 +493,7 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
   overflow: hidden;
   border-right: var(--border);
   background: var(--cream);
-  background-image: radial-gradient(circle, rgba(26,26,26,0.05) 1px, transparent 1px);
-  background-size: 10px 10px;
+  background-image: none;
 }
 
 #rehearsal-header {
@@ -537,12 +536,25 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
 #members-area {
   display: flex;
   flex-direction: row;
-  gap: 14px;
-  padding: 16px;
+  gap: 10px;
+  padding: 0 14px 14px;
   overflow-x: auto;
   overflow-y: hidden;
   flex: 1;
-  align-items: flex-start;
+  align-items: flex-end;
+
+  /* rehearsal room: aged wall + wood floor */
+  background:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0px, transparent 28px,
+      rgba(0,0,0,0.05) 28px, rgba(0,0,0,0.05) 30px
+    ),
+    linear-gradient(
+      180deg,
+      #cec3a8 0%, #cec3a8 58%,
+      #7a4e1e 58%, #6b4118 100%
+    );
 }
 
 #chemistry-display {
@@ -564,56 +576,85 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
 .member-card {
   border: var(--border);
   background: #fff;
-  padding: 10px 9px;
-  min-width: 175px;
-  max-width: 195px;
+  width: 132px;
   flex-shrink: 0;
   box-shadow: 3px 3px 0 var(--ink);
   transform: rotate(0.4deg);
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
 .member-card:nth-child(even) {
   transform: rotate(-0.4deg);
 }
 
-.member-card.injured {
-  background: repeating-linear-gradient(
-    45deg, #fff 0px, #fff 5px, #ffe5e5 5px, #ffe5e5 10px
-  );
-}
-
-.member-header {
+.member-avatar-wrap {
+  width: 100%;
+  height: 150px;
+  background: #fff;
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  cursor: help;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 7px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
 }
 
-.member-icon {
-  font-size: 22px;
-  line-height: 1;
-  flex-shrink: 0;
+.member-avatar-wrap.dark-bg {
+  background: #111;
+}
+
+.member-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  mix-blend-mode: multiply;
+}
+
+.member-avatar-wrap.dark-bg .member-avatar {
+  mix-blend-mode: screen;
+  filter: brightness(1.8) contrast(1.4);
+}
+
+.injured-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(169, 50, 38, 0.82);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.member-info {
+  padding: 6px 8px 5px;
+  border-bottom: 1px solid #ddd;
+  border-top: var(--border);
 }
 
 .member-name {
   position: relative;
   cursor: default;
   font-weight: bold;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stat-tooltip {
   display: none;
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 4px);
   left: 0;
-  z-index: 30;
+  z-index: 200;
   background: var(--cream);
   border: var(--border);
   box-shadow: 3px 3px 0 var(--ink);
@@ -642,13 +683,6 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
   font-size: 9px;
   letter-spacing: 0.1em;
   color: #666;
-}
-
-.injured-badge {
-  font-size: 9px;
-  color: var(--red);
-  font-weight: bold;
-  letter-spacing: 0.05em;
   margin-top: 2px;
 }
 
@@ -656,6 +690,7 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
   display: flex;
   flex-direction: column;
   gap: 3px;
+  padding: 6px 6px 8px;
 }
 
 .action-group-label {
@@ -666,12 +701,12 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
 }
 
 .action-btn {
-  font-size: 10px;
-  padding: 5px 7px;
+  font-size: 9px;
+  padding: 4px 6px;
   text-align: left;
   border-width: 2px;
   width: 100%;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   line-height: 1.2;
 }
 
@@ -681,7 +716,7 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
 
 .action-btn .action-cost {
   color: #888;
-  font-size: 9px;
+  font-size: 8px;
 }
 
 /* ─── BAND SLOT PANEL (RIGHT) ──────────────────────────────────────────────── */
