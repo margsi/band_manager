@@ -6,11 +6,11 @@ const ROLES = ['Vocalist', 'Guitarist', 'Bassist', 'Drummer', 'Keys'];
 const ROLE_ICONS = { Vocalist: '🎤', Guitarist: '🎸', Bassist: '🎵', Drummer: '🥁', Keys: '🎹' };
 
 const VENUES = [
-  { name: 'The Basement',   req: 0,       pay: 80,   fans: 100   },
-  { name: 'The Crow Bar',   req: 1000,    pay: 200,  fans: 400   },
-  { name: 'Midnight Stage', req: 10000,   pay: 500,  fans: 2000  },
-  { name: 'The Rex Theater',req: 100000,  pay: 1200, fans: 10000 },
-  { name: 'City Arena',     req: 500000,  pay: 3500, fans: 50000 },
+  { name: 'The Basement',    req: 0,       minSet: 3,  pay: 80,   fans: 100   },
+  { name: 'The Crow Bar',    req: 1000,    minSet: 6,  pay: 200,  fans: 400   },
+  { name: 'Midnight Stage',  req: 10000,   minSet: 10, pay: 500,  fans: 2000  },
+  { name: 'The Rex Theater', req: 100000,  minSet: 15, pay: 1200, fans: 10000 },
+  { name: 'City Arena',      req: 500000,  minSet: 20, pay: 3500, fans: 50000 },
 ];
 
 const SOCIAL = [
@@ -787,20 +787,26 @@ function renderBandSlot() {
   const socialEl = document.getElementById('social-list');
 
   venueEl.innerHTML = VENUES.map((v, i) => {
-    const unlocked  = gs.followers >= v.req;
-    const result    = calcConcertResult(v);
-    const dis       = !unlocked;
+    const unlocked   = gs.followers >= v.req;
+    const enoughSongs = gs.setlist.length >= v.minSet;
+    const dis        = !unlocked || !enoughSongs;
+    const result     = calcConcertResult(v);
+    const hint       = !unlocked
+      ? fmtFollowers(v.req) + ' followers required'
+      : !enoughSongs
+        ? `${v.minSet} songs on setlist required`
+        : `${fmtMoney(result.income)} · +${fmtFollowers(result.followers)}`;
     return `<button class="venue-btn" onclick="confirmBandSlot('concert', ${i})" ${dis ? 'disabled' : ''}>
               <span class="venue-name">${v.name}</span>
-              <span class="venue-req">${v.req > 0 ? fmtFollowers(v.req) + ' followers' : 'Open'}</span>
-              <span class="venue-estimate">${fmtMoney(result.income)} · +${fmtFollowers(result.followers)}</span>
+              <span class="venue-req">${hint}</span>
             </button>`;
   }).join('');
 
   const hasBand = gs.members.length >= 2;
   const socialBtns = SOCIAL.map((a, i) => {
-    const canAfford = gs.money >= a.cost;
-    const dis       = !hasBand || !canAfford;
+    const canAfford  = gs.money >= a.cost;
+    const needsBand  = a.name !== 'Movie Night';
+    const dis        = (needsBand && !hasBand) || !canAfford;
     return `<button class="social-btn" onclick="confirmBandSlot('social', ${i})" ${dis ? 'disabled' : ''}>
               <span class="social-name">${a.name}</span>
               <span class="social-detail">+${a.chem} chemistry${a.cost > 0 ? ' · ' + fmtMoney(a.cost) : ' · Free'}</span>
@@ -840,6 +846,18 @@ function showEndScreen() {
   localStorage.removeItem('bandmgr_v1');
 }
 
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+
+function toggleSettings() {
+  document.getElementById('settings-menu').classList.toggle('hidden');
+}
+
+function resetGame() {
+  if (!confirm('Reset everything and start over?')) return;
+  localStorage.removeItem('bandmgr_v1');
+  location.reload();
+}
+
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -851,5 +869,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('band-name-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') startGame();
+  });
+
+  document.addEventListener('click', e => {
+    const menu = document.getElementById('settings-menu');
+    const btn  = document.getElementById('settings-btn');
+    if (menu && !menu.classList.contains('hidden') && !menu.contains(e.target) && e.target !== btn) {
+      menu.classList.add('hidden');
+    }
   });
 });

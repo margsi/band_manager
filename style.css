@@ -184,7 +184,44 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
   display: flex;
   justify-content: flex-end;
   align-items: flex-start;
+  gap: 10px;
+  position: relative;
 }
+
+#settings-btn {
+  font-size: 18px;
+  border: 2px solid var(--ink);
+  background: var(--cream);
+  padding: 4px 7px;
+  line-height: 1;
+  margin-top: 4px;
+  align-self: flex-start;
+}
+
+#settings-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 115px;
+  border: var(--border);
+  background: var(--cream);
+  box-shadow: 3px 3px 0 var(--ink);
+  z-index: 50;
+  min-width: 150px;
+}
+
+#settings-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #ddd;
+}
+
+#settings-menu button:last-child { border-bottom: none; }
+#settings-menu button:hover { background: var(--yellow); }
 
 /* ─── SMARTPHONE ───────────────────────────────────────────────────────────── */
 

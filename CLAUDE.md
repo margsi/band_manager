@@ -246,13 +246,13 @@ followers gained = base_followers × score
 
 ### Concert venues
 
-| Venue | Followers required | Base pay | Base followers |
-|---|---|---|---|
-| The Basement | 0 | $80 | 100 |
-| The Crow Bar | 1,000 | $200 | 400 |
-| Midnight Stage | 10,000 | $500 | 2,000 |
-| The Rex Theater | 100,000 | $1,200 | 10,000 |
-| City Arena | 500,000 (post-ending) | $3,500 | 50,000 |
+| Venue | Followers required | Min. setlist | Base pay | Base followers |
+|---|---|--------------|---|---|
+| The Basement | 0 | 3            | $80 | 100 |
+| The Crow Bar | 1,000 | 6            | $200 | 400 |
+| Midnight Stage | 10,000 | 10           | $500 | 2,000 |
+| The Rex Theater | 100,000 | 15           | $1,200 | 10,000 |
+| City Arena | 500,000 (post-ending) | 20           | $3,500 | 50,000 |
 
 ### Album release income
 
