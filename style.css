@@ -169,6 +169,33 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
   width: fit-content;
 }
 
+#hire-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#media-player {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#music-btn {
+  font-size: 10px;
+  padding: 2px 7px;
+  border: 2px solid var(--ink);
+  letter-spacing: 0;
+  min-width: 28px;
+  text-align: center;
+}
+
+.track-name {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: #555;
+}
+
 #top-center {
   display: flex;
   align-items: center;

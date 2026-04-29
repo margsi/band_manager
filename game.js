@@ -995,6 +995,17 @@ function renderRival() {
   document.getElementById('rival-display').classList.toggle('rival-ahead', ahead);
 }
 
+// ─── MUSIC ───────────────────────────────────────────────────────────────────
+
+function toggleMusic() {
+  const audio = document.getElementById('title-music');
+  if (audio.paused) {
+    audio.play().catch(() => {});
+  } else {
+    audio.pause();
+  }
+}
+
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
 
 function toggleSettings() {
@@ -1004,16 +1015,34 @@ function toggleSettings() {
 function resetGame(skipConfirm) {
   if (!skipConfirm && !confirm('Reset everything and start over?')) return;
   localStorage.removeItem('bandmgr_v1');
-  location.reload();
+  location.reload(); // page reload re-triggers DOMContentLoaded which handles music
 }
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 
 window.addEventListener('DOMContentLoaded', () => {
+  const titleMusic = document.getElementById('title-music');
+
+  function syncMusicBtn() {
+    const btn = document.getElementById('music-btn');
+    if (btn) btn.textContent = titleMusic.paused ? '▶' : '⏸';
+  }
+  titleMusic.addEventListener('play',  syncMusicBtn);
+  titleMusic.addEventListener('pause', syncMusicBtn);
+
+  function playTitleMusic() {
+    titleMusic.play().catch(() => {});
+  }
+
   if (tryLoad() && gs && !gs.ended) {
     document.getElementById('setup-screen').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
     render();
+  } else {
+    // Setup screen is showing — try autoplay, fall back to first interaction
+    playTitleMusic();
+    document.addEventListener('click',    playTitleMusic, { once: true });
+    document.addEventListener('keydown',  playTitleMusic, { once: true });
   }
 
   document.getElementById('band-name-input').addEventListener('keydown', e => {

@@ -28,7 +28,13 @@
     <div id="top-bar">
       <div id="top-left">
         <div id="band-name-display">THE BAND</div>
-        <button id="hire-btn" onclick="openHireModal()">+ HIRE MEMBER</button>
+        <div id="hire-row">
+          <button id="hire-btn" onclick="openHireModal()">+ HIRE MEMBER</button>
+          <div id="media-player">
+            <button id="music-btn" onclick="toggleMusic()">▶</button>
+            <span class="track-name">GET FAMOUS</span>
+          </div>
+        </div>
       </div>
 
       <div id="top-center">
@@ -154,6 +160,8 @@
       <button class="modal-btn" onclick="resetGame(true)" style="margin-top:8px;align-self:flex-start">TRY AGAIN</button>
     </div>
   </div>
+
+  <audio id="title-music" src="Get Famous.mp3" loop></audio>
 
   <div id="tooltip"></div>
   <script src="game.js"></script>
