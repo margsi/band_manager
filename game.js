@@ -716,8 +716,6 @@ function renderMember(m) {
   const canLesson   = gs.money >= 150;
   const canWorkshop = gs.money >= 80;
 
-  const tooltip = `Tech: ${skillLabel(m.technical)} · Song: ${skillLabel(m.songwriting)} · Stage: ${skillLabel(m.stage)}`;
-
   const actions = [
     { type:'practice', label:'Practice',      sub:'Technical',   disabled: false },
     { type:'lesson',   label:'Lesson',        sub:`Technical · $150`, disabled: !canLesson },
@@ -739,10 +737,16 @@ function renderMember(m) {
 
   return `
     <div class="member-card ${injured ? 'injured' : ''}">
-      <div class="member-header" title="${tooltip}">
+      <div class="member-header">
         <span class="member-icon">${icon}</span>
         <div>
-          <div class="member-name">${m.name}</div>
+          <div class="member-name">${m.name}
+            <div class="stat-tooltip">
+              <div class="stat-row"><span>Technical</span><span>${skillLabel(m.technical)}</span></div>
+              <div class="stat-row"><span>Songwriting</span><span>${skillLabel(m.songwriting)}</span></div>
+              <div class="stat-row"><span>Stage</span><span>${skillLabel(m.stage)}</span></div>
+            </div>
+          </div>
           <div class="member-role">${m.role.toUpperCase()}</div>
           ${injured ? `<div class="injured-badge">INJURED · ${m.injuredWeeks}w left</div>` : ''}
         </div>

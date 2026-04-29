@@ -498,10 +498,42 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
 }
 
 .member-name {
+  position: relative;
+  cursor: default;
   font-weight: bold;
   font-size: 12px;
   line-height: 1.2;
 }
+
+.stat-tooltip {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  background: var(--cream);
+  border: var(--border);
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 8px 10px;
+  min-width: 160px;
+  white-space: nowrap;
+}
+
+.member-name:hover .stat-tooltip { display: block; }
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 11px;
+  padding: 2px 0;
+  border-bottom: 1px solid #e0dbd0;
+}
+
+.stat-row:last-child { border-bottom: none; }
+.stat-row span:first-child { color: #666; }
+.stat-row span:last-child  { font-weight: bold; }
+
 
 .member-role {
   font-size: 9px;
