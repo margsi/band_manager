@@ -11,8 +11,12 @@
   <!-- Setup Screen -->
   <div id="setup-screen">
     <div class="setup-card">
-      <div class="setup-headline">GET FAMOUS</div>
-      <div class="setup-sub">An indie music story</div>
+      <div id="setup-logo-wrap">
+        <img id="setup-logo" src="assets/get_famous_logo.png" alt="GET FAMOUS">
+      </div>
+      <div id="setup-video-frame">
+        <video id="setup-video" autoplay muted playsinline></video>
+      </div>
       <div class="setup-field">
         <label for="band-name-input">BAND NAME</label>
         <input type="text" id="band-name-input" placeholder="Enter band name..." maxlength="30" autocomplete="off">
@@ -161,7 +165,7 @@
     </div>
   </div>
 
-  <audio id="title-music" src="Get Famous.mp3" loop></audio>
+  <audio id="title-music" src="Get Famous.mp3" loop autoplay></audio>
 
   <div id="tooltip"></div>
   <script src="game.js"></script>

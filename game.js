@@ -1030,6 +1030,17 @@ function resetGame(skipConfirm) {
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 
 window.addEventListener('DOMContentLoaded', () => {
+  // Video cycling on setup screen
+  const setupVideos = ['assets/rock_show1.mp4', 'assets/rock_show2.mp4'];
+  let setupVideoIdx = 0;
+  const setupVideo = document.getElementById('setup-video');
+  setupVideo.src = setupVideos[0];
+  setupVideo.addEventListener('ended', () => {
+    setupVideoIdx = (setupVideoIdx + 1) % setupVideos.length;
+    setupVideo.src = setupVideos[setupVideoIdx];
+    setupVideo.play().catch(() => {});
+  });
+
   const titleMusic = document.getElementById('title-music');
 
   function syncMusicBtn() {
@@ -1048,10 +1059,11 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('game-screen').classList.remove('hidden');
     render();
   } else {
-    // Setup screen is showing — try autoplay, fall back to first interaction
-    playTitleMusic();
-    document.addEventListener('click',    playTitleMusic, { once: true });
-    document.addEventListener('keydown',  playTitleMusic, { once: true });
+    // Start music when video autoplays (muted video autoplay is allowed; audio piggybacks on it)
+    setupVideo.addEventListener('play', () => { titleMusic.play().catch(() => {}); }, { once: true });
+    // Fallback: first user interaction
+    document.addEventListener('click',   playTitleMusic, { once: true });
+    document.addEventListener('keydown', playTitleMusic, { once: true });
   }
 
   document.getElementById('band-name-input').addEventListener('keydown', e => {
