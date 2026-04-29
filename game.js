@@ -827,7 +827,6 @@ function renderMember(m) {
   const canCowrite  = gs.members.length >= 2;
   const canLesson   = gs.money >= 150;
   const canWorkshop = gs.money >= 80;
-  const darkBg    = ROLE_AVATAR_DARK.has(m.role);
 
   const actions = [
     { type:'practice', label:'Practice',  sub:'Technical',        tip: null },
@@ -851,7 +850,7 @@ function renderMember(m) {
 
   return `
     <div class="member-card">
-      <div class="member-avatar-wrap ${darkBg ? 'dark-bg' : ''}">
+      <div class="member-avatar-wrap">
         <img class="member-avatar" src="${ROLE_AVATARS[m.role]}" alt="${m.role}">
         ${injured ? `<div class="injured-overlay">INJURED<br>${m.injuredWeeks}w left</div>` : ''}
       </div>

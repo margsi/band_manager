@@ -553,18 +553,20 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
   flex: 1;
   align-items: flex-end;
 
-  /* rehearsal room: aged wall + wood floor */
-  background:
-    repeating-linear-gradient(
-      180deg,
-      transparent 0px, transparent 28px,
-      rgba(0,0,0,0.05) 28px, rgba(0,0,0,0.05) 30px
-    ),
-    linear-gradient(
-      180deg,
-      #cec3a8 0%, #cec3a8 58%,
-      #7a4e1e 58%, #6b4118 100%
-    );
+  background-color: var(--cream);
+  position: relative;
+}
+
+#members-area::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/rehearsal_room.png');
+  background-size: cover;
+  background-position: center center;
+  filter: brightness(1.4) contrast(4);
+  mix-blend-mode: multiply;
+  pointer-events: none;
 }
 
 #chemistry-display {
@@ -610,21 +612,12 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
   flex-shrink: 0;
 }
 
-.member-avatar-wrap.dark-bg {
-  background: #111;
-}
-
 .member-avatar {
   width: 100%;
   height: 100%;
   object-fit: contain;
   display: block;
   mix-blend-mode: multiply;
-}
-
-.member-avatar-wrap.dark-bg .member-avatar {
-  mix-blend-mode: screen;
-  filter: brightness(1.8) contrast(1.4);
 }
 
 .injured-overlay {
