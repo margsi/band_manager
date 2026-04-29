@@ -620,6 +620,10 @@ input:focus { outline: none; border-color: var(--ink); box-shadow: 2px 2px 0 var
   mix-blend-mode: multiply;
 }
 
+.member-avatar.baked-bg {
+  filter: brightness(1.4) contrast(4);
+}
+
 .injured-overlay {
   position: absolute;
   inset: 0;

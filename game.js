@@ -23,14 +23,24 @@ const SOCIAL = [
 
 const TIER_CAPS = [0, 40, 70, 100]; // index = tier number
 
-const ROLE_AVATARS = {
-  'Vocalist':  'assets/singer.png',
-  'Guitarist': 'assets/guitar_player.png',
-  'Bassist':   'assets/bass player.png',
-  'Drummer':   'assets/drummer.png',
-  'Keys':      'assets/keyboarder.png',
+const ROLE_AVATAR_VARIANTS = {
+  'Vocalist':  ['assets/singer.png'],
+  'Guitarist': ['assets/guitar_player.png', 'assets/guitar_player_female.png'],
+  'Bassist':   ['assets/bass player.png', 'assets/bass_player_female.png'],
+  'Drummer':   ['assets/drummer.png', 'assets/drummer_female.png'],
+  'Keys':      ['assets/keyboarder.png', 'assets/keyboarder_female.png'],
 };
-const ROLE_AVATAR_DARK = new Set(['Guitarist', 'Bassist']);
+
+const BAKED_BG_AVATARS = new Set([
+  'assets/bass_player_female.png',
+  'assets/keyboarder_female.png',
+  'assets/guitar_player_female.png',
+]);
+
+function pickAvatar(role) {
+  const variants = ROLE_AVATAR_VARIANTS[role] || ['assets/singer.png'];
+  return variants[rand(0, variants.length - 1)];
+}
 
 const RIVAL_NAMES = [
   'The Static Kings', 'Dead Frequencies', 'Hollow Parade',
@@ -216,11 +226,12 @@ function newGame(bandName) {
   save();
 }
 
-function makeMember(role, tech, song, stage) {
+function makeMember(role, tech, song, stage, avatar) {
   return {
     id: uid(),
     name: randName(),
     role,
+    avatar: avatar || pickAvatar(role),
     technical:  tech,
     songwriting: song,
     stage,
@@ -250,6 +261,7 @@ function tryLoad() {
     _uid = data._uid || 100;
     if (!gs.rival) gs.rival = { name: RIVAL_NAMES[rand(0, RIVAL_NAMES.length - 1)], followers: Math.max(500, gs.week * 80) };
     if (gs.lastAnniversaryWeek === undefined) gs.lastAnniversaryWeek = gs.week - (gs.week % 10);
+    gs.members.forEach(m => { if (!m.avatar) m.avatar = ROLE_AVATAR_VARIANTS[m.role]?.[0] || 'assets/singer.png'; });
     return true;
   } catch (e) { return false; }
 }
@@ -833,10 +845,12 @@ function refreshCandidates() {
 
   gs.candidates = [];
   for (let i = 0; i < Math.min(count, availRoles.length); i++) {
+    const cRole = availRoles[i];
     gs.candidates.push({
       id:          uid(),
       name:        randName(),
-      role:        availRoles[i],
+      role:        cRole,
+      avatar:      pickAvatar(cRole),
       technical:   rand(minS, maxS),
       songwriting: rand(minS, maxS),
       stage:       rand(minS, maxS),
@@ -864,7 +878,7 @@ function hireCandidate(candidateId) {
   if (!c) return;
 
   gs.money -= 300;
-  const m = makeMember(c.role, c.technical, c.songwriting, c.stage);
+  const m = makeMember(c.role, c.technical, c.songwriting, c.stage, c.avatar);
   m.name = c.name;
   gs.members.push(m);
   gs.memberActions[m.id] = { type: 'practice' };
@@ -981,7 +995,7 @@ function renderMember(m) {
   return `
     <div class="member-card">
       <div class="member-avatar-wrap">
-        <img class="member-avatar" src="${ROLE_AVATARS[m.role]}" alt="${m.role}">
+        <img class="member-avatar${BAKED_BG_AVATARS.has(m.avatar) ? ' baked-bg' : ''}" src="${m.avatar}" alt="${m.role}">
         ${injured ? `<div class="injured-overlay">INJURED<br>${m.injuredWeeks}w left</div>` : ''}
       </div>
       <div class="member-info">
