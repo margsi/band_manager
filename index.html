@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Band Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Setup Screen -->
+  <div id="setup-screen">
+    <div class="setup-card">
+      <div class="setup-headline">BAND MANAGER</div>
+      <div class="setup-sub">An indie music story</div>
+      <div class="setup-field">
+        <label for="band-name-input">BAND NAME</label>
+        <input type="text" id="band-name-input" placeholder="Enter band name..." maxlength="30" autocomplete="off">
+      </div>
+      <button id="start-btn" onclick="startGame()">START THE GRIND</button>
+    </div>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="game-screen" class="hidden">
+
+    <!-- Top Bar -->
+    <div id="top-bar">
+      <div id="top-left">
+        <div id="band-name-display">THE BAND</div>
+        <button id="hire-btn" onclick="openHireModal()">+ HIRE MEMBER</button>
+      </div>
+
+      <div id="top-center">
+        <div id="week-display">
+          <div class="week-label">WEEK</div>
+          <div id="week-number">1</div>
+        </div>
+      </div>
+
+      <div id="top-right">
+        <div id="smartphone">
+          <div id="phone-notch"></div>
+          <div id="phone-screen">
+            <div class="app-name">buzzr</div>
+            <div id="follower-count-display">0</div>
+            <div class="phone-stat-label">FOLLOWERS</div>
+            <div class="phone-divider"></div>
+            <div id="money-display">$500</div>
+            <div class="phone-stat-label">BALANCE</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Area -->
+    <div id="main-area">
+
+      <!-- Left: Setlist -->
+      <div id="setlist-panel">
+        <div class="panel-title">SETLIST</div>
+        <div class="setlist-count" id="setlist-count">0 / 20</div>
+        <div id="setlist-songs"
+             ondragover="event.preventDefault()"
+             ondrop="dropOnSetlist(event)">
+          <div class="drop-hint">Drop songs here</div>
+        </div>
+        <button class="expand-btn" id="expand-btn" onclick="toggleAvailableSongs()">▼ SONG LIBRARY</button>
+        <div id="available-songs" class="hidden"
+             ondragover="event.preventDefault()"
+             ondrop="dropOnAvailable(event)">
+        </div>
+      </div>
+
+      <!-- Center: Rehearsal Room -->
+      <div id="rehearsal-room">
+        <div id="rehearsal-header">
+          <div class="panel-title">REHEARSAL ROOM</div>
+          <div id="rehearsal-selector">
+            <span class="rehearsal-label">THIS WEEK:</span>
+            <button class="rehearsal-btn" data-action="learn"       onclick="setRehearsal('learn')">LEARN SONGS</button>
+            <button class="rehearsal-btn" data-action="write"       onclick="setRehearsal('write')">WRITE SONG</button>
+            <button class="rehearsal-btn" data-action="performance" onclick="setRehearsal('performance')">LIVE PERF.</button>
+            <button class="rehearsal-btn selected" data-action="none" onclick="setRehearsal(null)">SKIP</button>
+          </div>
+        </div>
+        <div id="members-area"></div>
+      </div>
+
+      <!-- Right: Band Slot -->
+      <div id="band-slot-panel">
+        <div class="panel-title">TONIGHT</div>
+        <div id="venues-list"></div>
+        <div id="social-list"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Event Modal -->
+  <div id="event-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div id="event-modal-type" class="event-type-badge">EVENT</div>
+      <div id="event-modal-title" class="modal-title">EVENT TITLE</div>
+      <div id="event-modal-content" class="modal-body">Event description.</div>
+      <button class="modal-btn" onclick="dismissEvent()">GOT IT</button>
+    </div>
+  </div>
+
+  <!-- Hire Modal -->
+  <div id="hire-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">AVAILABLE MUSICIANS</div>
+      <div id="hire-candidates"></div>
+      <button class="modal-btn" onclick="closeHireModal()">CLOSE</button>
+    </div>
+  </div>
+
+  <!-- End Screen -->
+  <div id="end-screen" class="modal-overlay hidden">
+    <div class="modal-card end-card">
+      <div class="end-headline">SIGNED.</div>
+      <div class="end-sub">A major label wants you. You made it.</div>
+      <div id="end-stats"></div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
